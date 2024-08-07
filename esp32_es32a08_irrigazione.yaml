@@ -1,0 +1,205 @@
+substitutions:
+  devicename: esp32_test
+  upper_devicename: esp32 test
+
+esphome:
+  name: $devicename
+  platform: ESP32
+  board: esp32dev
+
+
+wifi:
+  ssid: !secret wifi_nemo_ssid
+  password: !secret wifi_nemo_password
+#  manual_ip:
+#    static_ip: 192.168.1.31
+#    gateway: 192.168.1.254
+#    subnet: 255.255.255.0
+# Example configuration entry
+
+#Server web
+captive_portal:
+web_server:
+ port: 80
+
+# Enable Home Assistant API
+api:
+
+
+# Enable logging
+logger:
+
+
+ota:
+  #password: !secret ota_password
+
+
+sn74hc595:
+  - id: 'sn74hc595_hub'
+    data_pin: 13
+    clock_pin: 27
+    latch_pin: 14
+    oe_pin: 4
+    sr_count: 3
+
+# Configurazione del chip SN74HC165
+sn74hc165:
+  - id: sn74hc165_hub
+    data_pin: 5
+    clock_pin: 17
+    load_pin: 16
+    sr_count: 1    
+
+
+status_led:
+  pin:
+    number: 15
+    # inverted: yes
+
+switch:
+  
+  - platform: gpio
+    name: "ES32A08_relay_1"
+    id: "ES32A08_relay_1"
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 16
+      inverted: false
+
+  - platform: gpio
+    name: "ES32A08_relay_2"
+    id: "ES32A08_relay_2"
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 17
+      inverted: false
+
+  - platform: gpio
+    name: "ES32A08_relay_3"
+    id: "ES32A08_relay_3"
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 18
+      inverted: false
+
+  - platform: gpio
+    name: "ES32A08_relay_4"
+    id: "ES32A08_relay_4"
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 19
+      inverted: false
+
+  - platform: gpio
+    name: "ES32A08_relay_5"
+    id: "ES32A08_relay_5"
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 20
+      inverted: false
+
+  - platform: gpio
+    name: "ES32A08_relay_6"
+    id: "ES32A08_relay_6"
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 21
+      inverted: false
+
+  - platform: gpio
+    name: "ES32A08_relay_7"
+    id: "ES32A08_relay_7"
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 22
+      inverted: false
+
+  - platform: gpio
+    name: "ES32A08_relay_8"
+    id: "ES32A08_relay_8"
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 23
+      inverted: false
+
+  
+
+
+# Configurazione dei sensori binari per gli input
+binary_sensor:
+  
+  - platform: gpio
+    pin: 
+      number: 18
+      mode: INPUT_PULLUP
+      inverted: true
+    name: "Button 1"
+    on_click:
+      min_length: 50ms
+      max_length: 350ms
+      then:
+        - switch.toggle: ES32A08_relay_1
+    
+  # KEY 2 GPIO19
+  # KEY 3 GPIO21
+  # KEY 4 GPIO23
+
+
+  - platform: gpio
+    name: "SN74HC165 Pin #0"
+    pin:
+      sn74hc165: sn74hc165_hub
+      number: 0
+      inverted: true
+
+  - platform: gpio
+    name: "SN74HC165 Pin #1"
+    pin:
+      sn74hc165: sn74hc165_hub
+      number: 1
+      inverted: true
+
+  - platform: gpio
+    name: "SN74HC165 Pin #2"
+    pin:
+      sn74hc165: sn74hc165_hub
+      number: 2
+      inverted: true
+
+  - platform: gpio
+    name: "SN74HC165 Pin #3"
+    pin:
+      sn74hc165: sn74hc165_hub
+      number: 3
+      inverted: true
+
+  - platform: gpio
+    name: "SN74HC165 Pin #4"
+    pin:
+      sn74hc165: sn74hc165_hub
+      number: 4
+      inverted: true
+
+  - platform: gpio
+    name: "SN74HC165 Pin #5"
+    pin:
+      sn74hc165: sn74hc165_hub
+      number: 5
+      inverted: true
+
+  - platform: gpio
+    name: "SN74HC165 Pin #6"
+    pin:
+      sn74hc165: sn74hc165_hub
+      number: 6
+      inverted: true
+
+  - platform: gpio
+    name: "SN74HC165 Pin #7"
+    pin:
+      sn74hc165: sn74hc165_hub
+      number: 7
+      inverted: true
+
+
+  
