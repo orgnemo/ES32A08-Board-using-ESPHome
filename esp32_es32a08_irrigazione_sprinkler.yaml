@@ -1,0 +1,400 @@
+substitutions:
+  devicename: "irrigazione"
+  upper_devicename: "Irrigazione"
+  zone_1_name: "Irrigazione Centrale" #"zone 1"
+  zone_2_name: "Irrigazione Fronte casa" #"zone 2"
+  zone_3_name: "zone 3"
+  zone_4_name: "Irrigazione Dietro casa" #"zone 4"
+  zone_5_name: "Gocciolatoio viale principale" #"zone 5"
+  zone_6_name: "Irrigazione Sotto ulivi" #"zone 6"
+  sprinkler_auto_advance_name: "Avanzamento automatico" #"Auto Advance"
+  sprinkler_controller_name: "Centralina" #"Sprinkler Controller"
+  sprinkler_duration_name:  "Durata" #"Duration"
+  sprinkler_enable_name: "Abilita" #"Enable" 
+  sprinkler_main_switch_name: "${sprinkler_controller_name} avvia ${upper_devicename}"
+  sprinkler_repeat_cycles: "Ripeti cicli ${devicename}"
+  zone_1_valve_id: "valve_0"
+  zone_2_valve_id: "valve_1"
+  zone_3_valve_id: "valve_2"
+  zone_4_valve_id: "valve_3"
+  zone_5_valve_id: "valve_4"
+  zone_6_valve_id: "valve_5"
+esphome:
+  name: ${devicename}
+  platform: ESP32
+  board: esp32dev
+
+
+#Server web
+captive_portal:
+web_server:
+ port: 80
+
+
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  # encryption:
+  #   key: "6zeG5VCmbWhBpYATSekLlTWG4qSR79dXoBTz0vnM4Ck="
+  
+  services:
+    - service: set_multiplier
+      variables:
+        multiplier: float
+      then:
+        - sprinkler.set_multiplier:
+            id: lawn_sprinkler_ctrlr
+            multiplier: !lambda 'return multiplier;'
+    - service: start_full_cycle
+      then:
+        - sprinkler.start_full_cycle: lawn_sprinkler_ctrlr
+    - service: start_single_valve
+      variables:
+        valve: int
+      then:
+        - sprinkler.start_single_valve:
+            id: lawn_sprinkler_ctrlr
+            valve_number: !lambda 'return valve;'
+    - service: next_valve
+      then:
+        - sprinkler.next_valve: lawn_sprinkler_ctrlr
+    - service: previous_valve
+      then:
+        - sprinkler.previous_valve: lawn_sprinkler_ctrlr
+    - service: shutdown
+      then:
+        - sprinkler.shutdown: lawn_sprinkler_ctrlr
+    - service: pause
+      then:
+        - sprinkler.pause: lawn_sprinkler_ctrlr
+    - service: resume
+      then:
+        - sprinkler.resume: lawn_sprinkler_ctrlr
+    - service: resume_or_full_cycle
+      then:
+        - sprinkler.resume_or_start_full_cycle: lawn_sprinkler_ctrlr
+    - service: repeat_2
+      then:
+        - sprinkler.set_repeat:
+            id: lawn_sprinkler_ctrlr
+            repeat: 2  # would run three cycles
+    - service: repeat_3
+      then:
+        - sprinkler.set_repeat:
+            id: lawn_sprinkler_ctrlr
+            repeat: 3  # would run three cycles
+        
+ota:
+   password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_nemo_ssid
+  password: !secret wifi_nemo_password
+  # ssid: !secret wifi_office_ssid
+  # password: !secret wifi_office_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: ${devicename}
+    password: !secret wifi_nemo_password
+
+
+
+sn74hc595:
+  - id: 'sn74hc595_hub'
+    data_pin: 13
+    clock_pin: 27
+    latch_pin: 14
+    oe_pin: 4
+    sr_count: 3
+
+# Configurazione del chip SN74HC165
+sn74hc165:
+  - id: sn74hc165_hub
+    data_pin: 5
+    clock_pin: 17
+    load_pin: 16
+    sr_count: 1    
+
+
+status_led:
+  pin:
+    number: 15
+
+
+sprinkler:
+  - id: lawn_sprinkler_ctrlr
+    main_switch: "${sprinkler_main_switch_name}"
+    auto_advance_switch: "${upper_devicename} ${sprinkler_auto_advance_name}"
+    reverse_switch: "${upper_devicename} Reverse"
+    valve_overlap: 1s
+    valves:
+      - valve_switch: ${zone_1_name}
+        enable_switch: "${sprinkler_enable_name} $zone_1_name"
+        run_duration: 3s
+        valve_switch_id: ${zone_1_valve_id}
+      
+      - valve_switch: ${zone_2_name}
+        enable_switch: "${sprinkler_enable_name} ${zone_2_name}"
+        run_duration: 3s
+        valve_switch_id: ${zone_2_valve_id}
+      
+      - valve_switch: ${zone_3_name}
+        enable_switch: "${sprinkler_enable_name} ${zone_3_name}"
+        run_duration: 3s
+        valve_switch_id: ${zone_3_valve_id}
+      
+      - valve_switch: "${zone_4_name}"
+        enable_switch: "${sprinkler_enable_name} ${zone_4_name}"
+        run_duration: 3s
+        valve_switch_id: ${zone_4_valve_id}
+      
+      - valve_switch: ${zone_5_name}
+        enable_switch: "${sprinkler_enable_name} ${zone_5_name}"
+        run_duration: 3s
+        valve_switch_id: ${zone_5_valve_id}
+
+      - valve_switch: ${zone_6_name}
+        enable_switch: "${sprinkler_enable_name} ${zone_6_name}"
+        run_duration: 3s
+        valve_switch_id: ${zone_6_valve_id}
+
+     
+
+switch:
+  
+  - platform: gpio
+    # name: "${zone_1_name} Relay"
+    id: ${zone_1_valve_id}
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 16
+      inverted: false
+
+  - platform: gpio
+    # name: "${zone_2_name} Relay"
+    id: ${zone_2_valve_id}
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 17
+      inverted: false
+
+  - platform: gpio
+    # name: "${zone_3_name} Relay"
+    id: ${zone_3_valve_id}
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 18
+      inverted: false
+
+  - platform: gpio
+    # name: "${zone_4_name} Relay"
+    id: ${zone_4_valve_id}
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 19
+      inverted: false
+
+  - platform: gpio
+    # name: "${zone_5_name} Relay"
+    id: ${zone_5_valve_id}
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 20
+      inverted: false
+
+  - platform: gpio
+    # name: "${zone_6_name} Relay"
+    id: ${zone_6_valve_id}
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 21
+      inverted: false
+
+  - platform: gpio
+    # name: "ES32A08_relay_7"
+    id: "ES32A08_relay_7"
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 22
+      inverted: false
+
+  - platform: gpio
+    # name: "ES32A08_relay_8"
+    id: "ES32A08_relay_8"
+    pin:
+      sn74hc595: sn74hc595_hub
+      number: 23
+      inverted: false
+
+
+
+# Example configuration to set multiplier via number
+number:
+  - platform: template
+    id: sprinkler_ctrlr_multiplier
+    name: "${sprinkler_controller_name} Multiplier"
+    min_value: 0.1
+    max_value: 10.0
+    step: 0.1
+    lambda: "return id(lawn_sprinkler_ctrlr).multiplier();"
+    set_action:
+      - sprinkler.set_multiplier:
+          id: lawn_sprinkler_ctrlr
+          multiplier: !lambda 'return x;'
+          
+
+#   - platform: template
+#     id: sprinkler_ctrlr_duration
+#     name: "${sprinkler_controller_name} ${sprinkler_duration_name}"
+#     min_value: 0.1
+#     max_value: 500
+#     step: 1
+#     lambda: "return id(lawn_sprinkler_ctrlr).valve_run_duration(0);"
+# #    lambda: "return id(lawn_sprinkler_ctrlr).duration(0);"
+#     set_action:
+#       - sprinkler.set_valve_run_duration:
+#           id: lawn_sprinkler_ctrlr
+#           valve_number: 0
+#           run_duration: !lambda 'return x;'
+
+  - platform: template
+    id: sprinkler_ctrlr_duration_v_1
+    name: "${sprinkler_controller_name} ${sprinkler_duration_name} ${zone_1_name}"
+    min_value: 1
+    max_value: 300
+    step: 1
+    lambda: "return id(lawn_sprinkler_ctrlr).valve_run_duration(0);"
+    set_action:
+      - sprinkler.set_valve_run_duration:
+          id: lawn_sprinkler_ctrlr
+          valve_number: 0
+          run_duration: !lambda 'return x;'
+  - platform: template
+    id: sprinkler_ctrlr_duration_v_2
+    name: "${sprinkler_controller_name} ${sprinkler_duration_name} ${zone_2_name}"
+    min_value: 1
+    max_value: 300
+    step: 1
+    lambda: "return id(lawn_sprinkler_ctrlr).valve_run_duration(1);"
+    set_action:
+      - sprinkler.set_valve_run_duration:
+          id: lawn_sprinkler_ctrlr
+          valve_number: 1
+          run_duration: !lambda 'return x;'
+  - platform: template
+    id: sprinkler_ctrlr_duration_v_3
+    name: "${sprinkler_controller_name} ${sprinkler_duration_name} ${zone_3_name}"
+    min_value: 1
+    max_value: 300
+    step: 1
+    lambda: "return id(lawn_sprinkler_ctrlr).valve_run_duration(2);"
+    set_action:
+      - sprinkler.set_valve_run_duration:
+          id: lawn_sprinkler_ctrlr
+          valve_number: 2
+          run_duration: !lambda 'return x;'
+  - platform: template
+    id: sprinkler_ctrlr_duration_v_4
+    name: "${sprinkler_controller_name} ${sprinkler_duration_name} ${zone_4_name}"
+    min_value: 1
+    max_value: 300
+    step: 1
+    lambda: "return id(lawn_sprinkler_ctrlr).valve_run_duration(3);"
+    set_action:
+      - sprinkler.set_valve_run_duration:
+          id: lawn_sprinkler_ctrlr
+          valve_number: 3
+          run_duration: !lambda 'return x;'
+  - platform: template
+    id: sprinkler_ctrlr_duration_v_5
+    name: "${sprinkler_controller_name} ${sprinkler_duration_name} ${zone_5_name}"
+    min_value: 1
+    max_value: 300
+    step: 1
+    lambda: "return id(lawn_sprinkler_ctrlr).valve_run_duration(4);"
+    set_action:
+      - sprinkler.set_valve_run_duration:
+          id: lawn_sprinkler_ctrlr
+          valve_number: 4
+          run_duration: !lambda 'return x;'
+  - platform: template
+    id: sprinkler_ctrlr_repeat_cycles
+    name: "${sprinkler_repeat_cycles}"
+    min_value: 0
+    max_value: 300
+    step: 1
+    mode: box
+    lambda: "return id(lawn_sprinkler_ctrlr).repeat();"
+    set_action:
+      - sprinkler.set_repeat:
+          id: lawn_sprinkler_ctrlr
+          repeat: !lambda 'return x;'
+
+sensor:
+  - platform: uptime
+    name: "${upper_devicename} Uptime"
+    icon: mdi:clock-outline
+  - platform: wifi_signal
+    name: "${upper_devicename} Wifi Signal"
+    update_interval: 60s  
+
+  
+  - platform: template
+    id: tank_height
+    name: "${devicename} Cisterna altezza dell'acqua"
+    update_interval: 10s
+    accuracy_decimals: 1
+    device_class: ""
+    unit_of_measurement: "cm"
+    icon: "mdi:water-well"
+    filters:
+      - median:
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+      - calibrate_linear:
+        - 4 -> 0.0
+        - 5 -> 12.5
+        - 6 -> 25.0
+        - 7 -> 37.5
+        - 8 -> 50.0
+        - 9 -> 62.5
+        - 10 -> 75.0
+        - 11 -> 87.5
+        - 12 -> 100.0
+        - 13 -> 112.5
+        - 14 -> 125.0
+        - 15 -> 137.5
+        - 16 -> 150.0
+
+  
+
+  - platform: adc
+    # adc 0-20mA i1   
+    pin: GPIO36
+    attenuation: 11db  # 11db comme dans les exemples en C ES32A08 
+    name: "${devicename} Cisterna 1 mA"
+    accuracy_decimals: 2
+    device_class: ""
+    unit_of_measurement: "mA"
+    icon: "mdi:water-well"
+    update_interval: 10s
+    filters:
+      - lambda: !lambda |- # x -> Volts ; V*1000->mV ;R=91 I=V/R . le TL136 est 4-20mA donc min a 4mA for 0 meter of water et max 20ma pour 2m(mes TL136 sont en 0-2m)
+          if (((x*1000) / 91) < 0.004) return 4;
+          return (x*1000) / 91;
+      - median: # Attenuation des pics
+          window_size: 3
+          send_every: 3
+          send_first_at: 3
+    on_value:
+      then:
+        - lambda: id(tank_height).publish_state(x);
+        
+        #- lambda: id(cuve_election).publish_state(x);
+
+      
